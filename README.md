@@ -29,145 +29,76 @@ Matplotlib
 
 ## Program
 
-## Step 1: Import Libraries
 ```
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-```
 
-## Step 2: Read the Image
-```
+# Step 2: Load the image using imread() from cv2 module
 image = cv2.imread(r"C:\Users\admin\Downloads\mypic.jpeg")
-image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-```
 
-## Step 3: Convert to Grayscale
-```
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-```
+# Step 3: Convert the image to grayscale
+gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-## Step 4: Display Images
-```
-plt.figure(figsize=(10,5))
-plt.subplot(1,2,1); plt.imshow(image_rgb); plt.title("Original")
-plt.subplot(1,2,2); plt.imshow(gray, cmap='gray'); plt.title("Grayscale")
-plt.show()
-```
+# Input image and grayscale image
+plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # Convert image to RGB for displaying
+plt.title("Input Image")
+plt.axis('off')
 
-## Step 5: Thresholding
-```
-threshold = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)[1]
-plt.imshow(threshold, cmap='gray')
-plt.title("Threshold")
-plt.show()
-```
+plt.imshow(gray_image, cmap='gray')
+plt.title("Grayscale Image")
+plt.axis('off')
 
-## Step 6: Region of Interest (ROI)
-```
-roi_vertices = np.array([[[100,540],[900,540],[515,320],[450,320]]])
-mask = np.zeros_like(threshold)
-cv2.fillPoly(mask, roi_vertices, 255)
-roi = cv2.bitwise_and(threshold, mask)
+# Step 4: Using Canny operator from cv2, detect the edges of the image
+edges = cv2.Canny(gray_image, 50, 150)  # Canny edge detection with threshold values 50 and 150
 
-plt.figure(figsize=(15,5))
-for i, (img, title) in enumerate([(threshold,"Threshold"),(mask,"Mask"),(roi,"ROI")]):
-    plt.subplot(1,3,i+1); plt.imshow(img,cmap='gray'); plt.title(title)
-plt.show()
-```
-
-## Step 7: Edge Detection (Canny)
-```
-edges = cv2.Canny(roi, 50, 150)
+# Canny Edge Detector output
 plt.imshow(edges, cmap='gray')
-plt.title("Edges")
-plt.show()
+plt.title("Canny Edge Detector")
+plt.axis('off')
+
+# Step 5: Using the HoughLinesP(), detect line coordinates for every point in the image
+# The parameters of HoughLinesP are: image, resolution, threshold, minLineLength, maxLineGap
+lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength=50, maxLineGap=10)
+
+# Step 6: Using a for loop, draw the lines on the original image using the detected coordinates
+# The lines variable contains the endpoints of the detected lines
+for line in lines:
+    x1, y1, x2, y2 = line  # Unpacking the line coordinates
+    cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Draw green lines with thickness of 2
+
+# Display the result of Hough Transform (Image with lines)
+plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # Image with lines drawn
+plt.title("Result of Hough Transform")
+plt.axis('off')
 ```
 
-## Step 8: Gaussian Blur
-```
-blurred = cv2.GaussianBlur(edges, (5,5), 0)
-plt.imshow(blurred, cmap='gray')
-plt.title("Smoothed Image")
-plt.show()
-```
 
-## Step 9: Hough Transform
-```
-lines = cv2.HoughLinesP(blurred, 1, np.pi/180, 50, minLineLength=50, maxLineGap=100)
-line_image = image_rgb.copy()
 
-if lines is not None:
-    for x1,y1,x2,y2 in np.array(lines).reshape(-1,4):
-        cv2.line(line_image, (x1,y1), (x2,y2), (255,0,0), 3)
 
-plt.imshow(line_image)
-plt.title("Detected Lines")
-plt.show()
-```
-
-## Step 10: Lane Detection Logic
-```
-lane = np.zeros_like(image_rgb)
-h, w = image.shape[:2]
-
-if lines is not None:
-    left, right = [], []
-
-    for x1,y1,x2,y2 in np.array(lines).reshape(-1,4):
-        if x2 != x1:
-            slope = (y2-y1)/(x2-x1)
-            (left if slope < 0 else right).append((x1,y1,x2,y2))
-
-    for group in [left, right]:
-        if group:
-            p = np.array(group)
-            fit = np.polyfit(np.r_[p[:,1],p[:,3]], np.r_[p[:,0],p[:,2]], 1)
-            cv2.line(lane, (int(np.polyval(fit,h)),h),
-                     (int(np.polyval(fit,h*0.6)),int(h*0.6)), (0,255,0), 5)
-
-final_output = cv2.addWeighted(image_rgb, 0.8, lane, 1, 0)
-
-plt.imshow(final_output)
-plt.title("Final Lane Detection")
-plt.axis("off")
-plt.show()
-```
 
 ## Output
 
 ## Original image
 
-<img width="435" height="576" alt="image" src="https://github.com/user-attachments/assets/4937e668-3739-4d4b-a444-16bad1b30f22" />
+<img width="322" height="570" alt="image" src="https://github.com/user-attachments/assets/72612a7b-9166-479c-80fc-06e24f67510d" />
+
 
 ## Grayscale image
 
-<img width="473" height="579" alt="image" src="https://github.com/user-attachments/assets/54c90160-e780-4fcb-a11f-9bf42bd007d9" />
+<img width="371" height="577" alt="image" src="https://github.com/user-attachments/assets/840fc94b-a87a-4313-91f9-2a53cde85bd6" />
 
 
-## Threshold image
+## Canny Edge Detector image
 
-<img width="382" height="547" alt="image" src="https://github.com/user-attachments/assets/ddce40af-1398-4a71-b5bd-c52f43d870c0" />
+<img width="346" height="564" alt="image" src="https://github.com/user-attachments/assets/8147c610-4a78-483a-9354-f6faaa707d14" />
 
-## ROI masked image
+## Hough Transform image
 
-<img width="1253" height="527" alt="image" src="https://github.com/user-attachments/assets/2e0b597c-fb56-4157-a3f3-167e6a125386" />
+<img width="392" height="561" alt="image" src="https://github.com/user-attachments/assets/9d43b593-0ade-4b2d-8d03-8a829bfe7a07" />
 
-## Edge detected image
 
-<img width="384" height="566" alt="image" src="https://github.com/user-attachments/assets/ab7b706d-baac-4052-8974-6c07a0177550" />
 
-## Smoothed image
-
-<img width="444" height="553" alt="image" src="https://github.com/user-attachments/assets/c57cd4aa-d84e-4d24-bcbc-3af09d205f5a" />
-
-## Detected lines
-
-<img width="402" height="544" alt="image" src="https://github.com/user-attachments/assets/1f204600-63bf-4c14-98b2-9a96dea4b8a8" />
-
-## Final lane detection output
-
-<img width="311" height="532" alt="image" src="https://github.com/user-attachments/assets/0c28ac2f-4fe8-453e-a3d7-5aff97592495" />
 
 ## Result
 
